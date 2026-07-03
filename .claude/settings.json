@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3 .claude/hooks/branch_guard.py" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "python3 .claude/hooks/post_write_check.py" }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "code-generator|impact-analyzer|verifier",
+        "hooks": [
+          { "type": "command", "command": "python3 .claude/hooks/update_board.py" }
+        ]
+      }
+    ]
+  }
+}

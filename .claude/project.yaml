@@ -1,0 +1,28 @@
+# .claude/project.yaml — 프로젝트 매니페스트
+#
+# /init 커맨드가 스캔 + 질문을 통해 채웁니다. 사람이 직접 고쳐도 됩니다.
+# 여기 선언된 값(특히 project.maturity)은 이후 모든 세션이 그대로 참조합니다 —
+# 하네스는 런타임에 "이 프로젝트가 신규인지 레거시인지"를 추측하지 않습니다.
+
+project:
+  name: ""
+  maturity: ""          # new | legacy — /init이 사람에게 반드시 확인 (추측 금지)
+  stack: []              # 예: ["python", "fastapi"]
+
+commands:
+  test: ""               # 예: "pytest -q"  — post_write_check.py 훅이 그대로 실행
+  lint: ""                # 예: "ruff check ."
+  build: ""               # 선택
+
+branches:
+  protected: ["main", "master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
+
+models:
+  # 서브에이전트 모델 배정 오버라이드. 비워두면 .claude/agents/*.md의 기본값을 그대로 씁니다.
+  # /init 실행 시 여기 값을 읽어 해당 에이전트 파일의 model: 프론트매터에 반영합니다.
+  code-generator: ""    # 기본값 haiku
+  impact-analyzer: ""   # 기본값 haiku
+  verifier: ""           # 기본값 sonnet
+
+conventions:
+  notes: []               # 예: ["에러는 항상 Result 타입으로 반환", "테스트는 tests/ 아래 대칭 구조"]
