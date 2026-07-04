@@ -15,6 +15,7 @@ project:
 
 commands:
   test: ""                 # 예: "conda run -n <프로젝트-환경> pytest -q" — /init이 채웁니다
+  test_fast: ""            # Write/Edit마다 도는 빠른 스모크 테스트. 비워두면 commands.test를 그대로 씁니다
   lint: ""                 # 예: "conda run -n <프로젝트-환경> ruff check ."
   build: ""                # 선택
 

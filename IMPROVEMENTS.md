@@ -16,58 +16,10 @@
 
 ## P1 — 안전망의 구멍 (먼저 할 것)
 
-### 1. PyYAML이 없으면 `post_write_check` 게이트가 조용히 꺼진다
-
-- **문제**: 모든 훅이 `_manifest.py`의 `load_manifest()`로 `project.yaml`을 읽는데, PyYAML이
-  설치 안 된 환경에서는 stderr 경고 한 줄 내고 빈 dict를 반환한다. `branch_guard.py`는
-  기본값(`main/master/develop`)으로 동작하지만, `post_write_check.py`는 `commands.test`가
-  비게 되어 **테스트/린트 게이트가 통째로 조용히 꺼진다**. 팀원이 새 머신에서 클론 직후
-  작업하면 게이트 없이 진행하고 있다는 걸 눈치채기 어렵다.
-- **개선안**: 훅이 조용히 통과하는 대신, PyYAML 부재 시 exit 2로 **차단**하고 설치 명령을
-  안내하게 바꾼다 (게이트는 fail-closed가 맞다 — fail-open은 branch_guard처럼 기본값으로
-  대체 가능한 경우에만). 또는 `/init` 절차 0단계에 `python3 -c "import yaml"` 확인을 추가한다.
-- **대상**: `.claude/hooks/_manifest.py`, `.claude/hooks/post_write_check.py`,
-  `.claude/commands/init.md`
-- **난이도**: 하
-
-### 2. `core.hooksPath` 미설정이면 커밋 분리 훅이 전혀 작동하지 않는다
-
-- **문제**: `.githooks/pre-commit`은 팀원이 `git config core.hooksPath .githooks`를 직접
-  실행해야만 켜진다. 깜빡하면 하네스/프로젝트 섞인 커밋이 그대로 통과한다.
-  (`.claude/decisions/0008` "남은 한계"에 이미 기록됨.)
-- **개선안**: `/init` 절차 0단계에 `git config core.hooksPath` 값 확인을 추가하고, 미설정이면
-  설정 명령을 안내한 뒤 멈추게 한다. `/init`은 어차피 모든 프로젝트의 첫 관문이므로 여기가
-  강제 지점으로 적절하다.
-- **대상**: `.claude/commands/init.md`
-- **난이도**: 하
-
-### 3. `"[<task_id>]"` description 규칙이 프롬프트 지시로만 존재한다
-
-- **문제**: 보고 누락 자동 감지(`update_board.py`)는 Agent 호출의 `description`이
-  `"[<task_id>] ..."` 형식일 때만 작동한다. 오케스트레이터가 규칙을 잊으면 감지가 조용히
-  꺼진다 (`.claude/decisions/0006` "남은 것"에 기록됨). 원칙 2번("규칙은 훅으로 강제한다")과
-  어긋나는 상태.
-- **개선안**: PreToolUse 훅(matcher: `Task`)을 추가해, `subagent_type`이
-  `code-generator|impact-analyzer|verifier`인 호출의 `description`이 `^\[[A-Za-z0-9_]+\]`
-  패턴이 아니면 차단하고 올바른 형식을 안내한다. 다른 타입(general-purpose 등)은 건드리지
-  않는다.
-- **대상**: `.claude/hooks/`에 새 훅 추가, `.claude/settings.json`에 등록
-- **난이도**: 중 (Task 훅 페이로드에 `tool_input.subagent_type`/`description`이 실제로
-  들어오는지 먼저 덤프해서 확인할 것 — 0006 결정 때처럼 실측 후 구현)
+_1~4번(PyYAML fail-closed, hooksPath 확인, description 규칙 훅 강제, test_fast 필드)은 완료.
+자세한 내용은 `.claude/decisions/0009-description-gate-hook.md`와 커밋 히스토리 참고._
 
 ## P2 — 운영 비용
-
-### 4. `post_write_check`가 Write/Edit마다 전체 테스트를 돌린다
-
-- **문제**: 파일 하나 쓸 때마다 `commands.test` 전체가 실행된다(타임아웃 600초). 테스트가
-  수십 초를 넘는 프로젝트에서는 code-generator의 파일 여러 개 작업이 기하급수로 느려진다.
-- **개선안(택1)**: (a) `commands.test_fast` 필드를 매니페스트에 추가해 훅은 빠른 스모크만
-  돌리고 전체 테스트는 마무리 단계에서 1회 실행, (b) 같은 run 안에서 N초 이내 연속 Write는
-  마지막 것만 검사(디바운스), (c) 변경 파일 경로와 매칭되는 테스트만 선택 실행. (a)가 구현이
-  가장 단순하고 예측 가능함.
-- **대상**: `.claude/hooks/post_write_check.py`, `.claude/project.yaml`,
-  `.claude/commands/init.md`(새 필드 안내)
-- **난이도**: 중
 
 ### 5. `runs/`가 무한히 쌓인다
 
@@ -90,15 +42,7 @@
 - **대상**: `.claude/hooks/update_board.py`, `.claude/hooks/approval_gate.py`, 커맨드 문서들
 - **난이도**: 중
 
-### 7. `pre-commit`이 분리만 하고 하네스 훅의 문법 검증은 안 한다
-
-- **문제**: `.claude/hooks/*.py`를 고장 낸 채 커밋해도 아무도 못 잡는다. Claude Code 훅은
-  실패해도 조용히 exit 0 처리되는 경로가 많아, 고장을 눈치채기 어렵다.
-- **개선안**: `.githooks/pre-commit`에서 스테이징된 `.claude/hooks/*.py`가 있으면
-  `python3 -m py_compile`로 문법 검사, `.claude/settings.json`이 있으면 `json.load` 검사를
-  추가한다. 몇 줄이면 된다.
-- **대상**: `.githooks/pre-commit`
-- **난이도**: 하
+_7번(pre-commit 문법 검증)은 완료._
 
 ## P3 — 검증·문서 부채
 
@@ -112,16 +56,7 @@
 - **대상**: 검증 작업 (코드 변경 없을 수 있음)
 - **난이도**: 하 (작업량은 적으나 실측 필요)
 
-### 9. 서브에이전트가 지정된 task_id를 무시하고 제멋대로 지을 수 있다
-
-- **문제**: 실측에서 verifier가 오케스트레이터가 지정한 `t1` 대신 자기가 지은
-  task_id(`dummy-hook-check`)로 보고서를 쓴 사례가 있었다 (0006 결정 로그의 검증 기록).
-  보고 누락 감지가 이를 "누락"으로 잡아주긴 하지만, 애초에 안 일어나는 게 낫다.
-- **개선안**: 세 에이전트 정의(`.claude/agents/*.md`)의 보고 파일 섹션에 "task_id는
-  오케스트레이터가 준 값을 **그대로** 쓴다 — 더 적절해 보이는 이름이 있어도 바꾸지 않는다"를
-  명시적으로 추가한다.
-- **대상**: `.claude/agents/code-generator.md`, `impact-analyzer.md`, `verifier.md`
-- **난이도**: 하
+_9번(에이전트 정의에 task_id 준수 지시 추가)은 완료._
 
 ### 10. Windows 팀원 호환성이 검증되지 않았다
 
