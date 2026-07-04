@@ -24,6 +24,7 @@
 ## 시작하는 법
 
 ```
+0. git config core.hooksPath .githooks   → 팀원 각자 최초 1회 (하네스/프로젝트 커밋 분리 강제)
 1. /init                          → .claude/project.yaml 채우기 (신규/레거시, 스택, 테스트·린트 명령)
 2. 사람이 기능 전용 브랜치로 전환   → 하네스가 자동으로 만들지 않습니다
 3-a. 신규 프로젝트 → /create "만들려는 것에 대한 설명"
@@ -72,6 +73,34 @@
 않습니다. 반대로 `/extend`·`/maintain`의 스펙 확인처럼 "가벼운 확인"으로 정한 지점은 의도적으로
 훅에 넣지 않았습니다 — 작은 변경까지 매번 파일 기반 게이트를 걸면 두 모드의 존재 이유(승인
 게이트 없이 빠르게 간다)가 사라지기 때문입니다.
+
+(위 4개는 Claude Code가 실행하는 훅입니다. 아래 git pre-commit 훅은 별개 메커니즘입니다.)
+
+## 하네스·프로젝트 커밋 분리 — `.githooks/pre-commit`
+
+프로젝트 작업 중에 하네스도 같이 고치는 경우가 흔합니다(훅 버그 수정, 커맨드 문구 개선 등).
+이때 하네스 개선이 프로젝트 코드와 같은 커밋에 섞여 있으면, 나중에 그 개선만 `main`이나 다른
+`project/<이름>` 브랜치로 옮기고 싶어도 `git cherry-pick` 한 번으로 깨끗하게 옮길 수 없습니다.
+
+그래서 `.githooks/pre-commit`이 다음 파일들(순수 하네스 인프라)과 그 외 파일(프로젝트 쪽)이
+**한 커밋에 같이 스테이징되어 있으면 커밋을 막습니다**:
+
+- `.claude/agents/`, `.claude/commands/`, `.claude/hooks/`, `.claude/settings.json`, `.githooks/`
+- `.gitignore`, 루트 `README.md`, `runs/README.md`
+
+**활성화**: 이 훅은 git이 기본으로 읽는 위치(`.git/hooks/`)가 아니라 저장소 안(`.githooks/`)에
+있어서, 클론 직후 자동으로 켜지지 않습니다. 팀원 각자 한 번만 실행하세요:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+**일부러 강제하지 않은 것**: `CLAUDE.md`(컨벤션 섹션에 `/init`이 프로젝트 컨벤션을 적음),
+`.claude/decisions/`(`/maintain`이 프로젝트 버그의 원인·근거를 적음), `.claude/project.yaml`(값
+자체가 프로젝트 전용)은 이 분리 대상에서 뺐습니다 — 정상 워크플로우에서 프로젝트 커밋과 같이
+있는 게 자연스러운 파일들이라, 기계적으로 막으면 오탐이 너무 많습니다. 이 셋을 하네스 개선
+목적으로 다른 브랜치에 옮기고 싶을 땐 diff를 직접 보고 프로젝트 전용 내용을 걷어내야 합니다.
+자세한 배경은 `.claude/decisions/0008-harness-project-commit-separation.md` 참고.
 
 ## 진행 상황 확인 — `runs/`
 

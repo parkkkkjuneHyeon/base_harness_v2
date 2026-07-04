@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# 하네스 순수 인프라 파일과 프로젝트 파일을 한 커밋에 섞지 않도록 막는다.
+#
+# 목적: 팀원이 프로젝트 작업 중 하네스도 같이 고치는 경우, 하네스 개선만 별도 커밋으로
+# 분리되어 있어야 `git cherry-pick <해시>` 한 번으로 main이나 다른 project/<이름> 브랜치에
+# 그대로 옮길 수 있다. 한 커밋에 프로젝트 코드와 섞여 있으면 cherry-pick이 프로젝트 전용
+# 내용까지 끌고 가서 깨끗하게 옮길 수 없다.
+#
+# 설정(팀원 각자 최초 1회): git config core.hooksPath .githooks
+#
+# 여기서 "하네스"로 강제 분리하는 건 code-generator/impact-analyzer/verifier 정의,
+# 커맨드 프롬프트, 훅 스크립트, 훅 설정, 이 pre-commit 훅 자체, .gitignore, 최상위 README,
+# runs/README.md처럼 프로젝트 내용이 절대 안 섞이는 순수 인프라뿐이다. CLAUDE.md(컨벤션 섹션에 /init이 프로젝트
+# 컨벤션을 적음), .claude/decisions/(원인/근거 뒤에 /maintain이 프로젝트 버그 결정을 적음),
+# .claude/project.yaml(값 자체가 프로젝트 전용)은 일부러 뺐다 — 이 셋은 정상 워크플로우에서
+# 프로젝트 커밋과 같이 있는 게 자연스러워서, 기계적으로 막으면 오탐이 너무 많다. 이 셋을
+# cherry-pick할 땐 diff를 직접 보고 프로젝트 전용 내용을 걷어내야 한다.
+
+STAGED=$(git diff --cached --name-only)
+[ -z "$STAGED" ] && exit 0
+
+is_harness() {
+  case "$1" in
+    .claude/agents/*|.claude/commands/*|.claude/hooks/*|.claude/settings.json| \
+    .githooks/*|.gitignore|README.md|runs/README.md)
+      return 0 ;;
+    *)
+      return 1 ;;
+  esac
+}
+
+has_harness=0
+has_project=0
+
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  if is_harness "$f"; then
+    has_harness=1
+  else
+    has_project=1
+  fi
+done <<< "$STAGED"
+
+if [ "$has_harness" -eq 1 ] && [ "$has_project" -eq 1 ]; then
+  echo "[harness] 이 커밋에 하네스 인프라 파일과 프로젝트 파일이 섞여 있습니다:" >&2
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    if is_harness "$f"; then
+      echo "  [하네스]   $f" >&2
+    else
+      echo "  [프로젝트] $f" >&2
+    fi
+  done <<< "$STAGED"
+  echo "" >&2
+  echo "하네스 개선을 나중에 'git cherry-pick'으로 다른 브랜치에 깨끗하게 옮길 수 있도록," >&2
+  echo "두 커밋으로 나눠주세요. 예:" >&2
+  echo "  git restore --staged <프로젝트 파일들>   # 스테이징에서만 뺀다" >&2
+  echo "  git commit -m \"...\"                    # 하네스만 먼저 커밋" >&2
+  echo "  git add <프로젝트 파일들> && git commit   # 프로젝트 커밋" >&2
+  exit 1
+fi
+
+exit 0
