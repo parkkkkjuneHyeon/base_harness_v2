@@ -4,7 +4,8 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "python3 .claude/hooks/branch_guard.py" }
+          { "type": "command", "command": "python3 .claude/hooks/branch_guard.py" },
+          { "type": "command", "command": "python3 .claude/hooks/approval_gate.py" }
         ]
       }
     ],

@@ -15,7 +15,7 @@ commands:
   build: ""                # 선택
 
 branches:
-  protected: ["main", "master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
+  protected: ["master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
 
 models:
   # 서브에이전트 모델 배정 오버라이드. 비워두면 .claude/agents/*.md의 기본값을 그대로 씁니다.
