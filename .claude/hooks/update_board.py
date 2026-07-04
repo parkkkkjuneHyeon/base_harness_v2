@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""SubagentStop 훅 (code-generator|impact-analyzer|verifier) — 게시판 갱신.
+"""SubagentStop 훅 (code-generator|impact-analyzer|verifier) — 게시판 갱신 + 보고 누락 감지.
 
 code-generator / impact-analyzer / verifier가 끝날 때마다
 runs/<현재 run>/agents/*.md 를 다시 스캔해서 summary.md를 다시 쓴다.
 
-알려진 한계 (의도적으로 단순하게 둔 부분): 이 훅은 "보고를 빼먹었는지"를
-판정하지 않는다. 같은 종류의 서브에이전트를 병렬로 여러 개 띄우면, 훅 입력
-(agent_type만 주어지고 task_id는 없다)만으로는 지금 끝난 호출이 어떤
-task_id에 해당하는지 구분할 수 없기 때문이다. 그래서 "전부 보고했는지"는
-오케스트레이터가 dispatch한 task_id 개수와 summary.md 행 수를 직접 대조해서
-확인한다 — .claude/commands/extend.md 5절 참고.
+보고 누락 감지: 오케스트레이터가 Agent 호출 시 description을 "[<task_id>] <설명>" 형식으로
+지정하면, 이 훅은 SubagentStop 페이로드의 background_tasks[]에서 자기 agent_id에 해당하는
+항목을 찾아 description에서 task_id를 파싱한다. 그 task_id에 해당하는 보고 파일
+(agents/<agent_type>_<task_id>.md)이 없으면 runs/<run>/agents/.missing.json에 기록해두고
+summary.md에 경고로 노출한다 — 나중에 보고가 들어오면 자동으로 사라진다.
+
+description이 "[task_id]" 규칙을 따르지 않으면(과거 호출, 규칙 미준수 등) 이 감지는 조용히
+건너뛴다 — 오탐보다 무동작이 낫다. 이 경우 "전부 보고했는지"는 여전히 오케스트레이터가
+디스패치한 task_id 개수와 summary.md 행 수를 직접 대조해서 확인해야 한다.
 """
 import glob
 import json
@@ -18,6 +21,7 @@ import re
 import sys
 
 FIELD_RE = re.compile(r"^([a-z_]+):\s*(.*)$")
+TASK_ID_RE = re.compile(r"^\[([A-Za-z0-9_]+)\]")
 
 
 def find_current_run(cwd: str):
@@ -42,7 +46,7 @@ def parse_report(path: str) -> dict:
     return fields
 
 
-def build_summary(run_dir: str) -> str:
+def build_summary(run_dir: str, missing: dict) -> str:
     agents_dir = os.path.join(run_dir, "agents")
     rows = []
     for path in sorted(glob.glob(os.path.join(agents_dir, "*.md"))):
@@ -66,7 +70,50 @@ def build_summary(run_dir: str) -> str:
         lines.append(f"| {task_id} | {status} | {summary} | {fname} |")
     if not rows:
         lines.append("| (아직 보고 없음) |  |  |  |")
+
+    if missing:
+        lines.append("")
+        lines.append("## ⚠ 보고 누락 감지")
+        lines.append("")
+        for key, info in sorted(missing.items()):
+            lines.append(
+                f"- `{key}` — 서브에이전트가 종료됐지만 `agents/{key}.md`가 없습니다. "
+                f"(description: \"{info.get('description', '')}\")"
+            )
+
     return "\n".join(lines) + "\n"
+
+
+def load_missing(run_dir: str) -> dict:
+    path = os.path.join(run_dir, "agents", ".missing.json")
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_missing(run_dir: str, missing: dict) -> None:
+    path = os.path.join(run_dir, "agents", ".missing.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(missing, f, ensure_ascii=False, indent=2)
+
+
+def resolve_task_id(payload: dict):
+    """이번에 끝난 호출의 (agent_type, task_id, description)을 payload에서 찾는다. 모르면 None."""
+    agent_id = payload.get("agent_id")
+    agent_type = payload.get("agent_type")
+    if not agent_id or not agent_type:
+        return None
+    for task in payload.get("background_tasks", []):
+        if task.get("id") == agent_id:
+            description = task.get("description", "")
+            m = TASK_ID_RE.match(description)
+            if m:
+                return agent_type, m.group(1), description
+    return None
 
 
 def main() -> None:
@@ -81,8 +128,29 @@ def main() -> None:
     if run_dir is None:
         sys.exit(0)  # 추적 중인 run이 없으면 관여하지 않는다
 
-    os.makedirs(os.path.join(run_dir, "agents"), exist_ok=True)
-    summary = build_summary(run_dir)
+    agents_dir = os.path.join(run_dir, "agents")
+    os.makedirs(agents_dir, exist_ok=True)
+
+    missing = load_missing(run_dir)
+
+    resolved = resolve_task_id(payload)
+    if resolved is not None:
+        agent_type, task_id, description = resolved
+        key = f"{agent_type}_{task_id}"
+        report_path = os.path.join(agents_dir, f"{key}.md")
+        if os.path.exists(report_path):
+            missing.pop(key, None)
+        else:
+            missing[key] = {"description": description}
+
+    # 다른 호출에서 이미 감지된 누락도, 그 사이 보고가 들어왔으면 같이 해소한다.
+    for key in list(missing.keys()):
+        if os.path.exists(os.path.join(agents_dir, f"{key}.md")):
+            missing.pop(key, None)
+
+    save_missing(run_dir, missing)
+
+    summary = build_summary(run_dir, missing)
     with open(os.path.join(run_dir, "summary.md"), "w", encoding="utf-8") as f:
         f.write(summary)
 

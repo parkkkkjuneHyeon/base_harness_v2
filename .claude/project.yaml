@@ -10,9 +10,9 @@ project:
   stack: []              # 예: ["python", "fastapi"]
 
 commands:
-  test: ""               # 예: "pytest -q"  — post_write_check.py 훅이 그대로 실행
-  lint: ""                # 예: "ruff check ."
-  build: ""               # 선택
+  test: "conda run -n book-graph-rag pytest -q"        # 전용 conda 환경에서 실행 (ambient/base 오염 방지)
+  lint: "conda run -n book-graph-rag ruff check ."       # 위와 동일 환경
+  build: ""                # 선택
 
 branches:
   protected: ["main", "master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
