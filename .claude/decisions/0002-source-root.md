@@ -16,7 +16,8 @@
 `source_root` 값은 오케스트레이터(`/extend`)만 알고 사용한다 — 새 파일 배치, 컨벤션 스캔 범위,
 영향범위 검색 범위를 정할 때 이 값을 기준으로 삼는다. `code-generator`/`impact-analyzer`
 서브에이전트 정의에는 이 값을 넣지 않는다 — 경로 결정 권한은 오케스트레이터 한 곳에만 둔다는
-기존 아키텍처 원칙(정책 계층 06절)과 일치시키기 위해서다.
+원칙과 일치시키기 위해서다 (`.claude/agents/code-generator.md`, `.claude/agents/impact-analyzer.md`에
+`source_root` 관련 지시가 없는 것도 같은 이유).
 
 ## 근거
 

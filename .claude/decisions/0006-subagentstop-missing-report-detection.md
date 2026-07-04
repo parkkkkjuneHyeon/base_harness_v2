@@ -8,7 +8,7 @@
 한계가 있었다 — 훅 입력엔 `agent_type`만 있고 지금 끝난 호출이 어떤 `task_id`에 해당하는지
 알 방법이 없다고 가정했기 때문이다. 그래서 `extend.md`/`create.md`/`maintain.md`는 전부
 "디스패치한 task_id 개수와 `summary.md` 행 수를 오케스트레이터가 직접 대조하라"는 수동 절차로
-이 한계를 우회했다 (`0005-general-purpose-agent-fallback.md` 참고 — 별개 사안).
+이 한계를 우회했다 (`.claude/commands/extend.md` 5절 참고 — 이 문서와는 별개 사안).
 
 이 가정을 실제 Claude Code 환경에서 검증해보니 사실이 아니었다. `update_board.py`에 디버그
 덤프를 잠깐 추가해 실제 `SubagentStop` 페이로드를 확인한 결과, 다음 필드가 이미 들어 있었다:
