@@ -19,6 +19,19 @@
 STAGED=$(git diff --cached --name-only)
 [ -z "$STAGED" ] && exit 0
 
+# python3가 없는 환경(예: python3 별칭이 없는 Windows) 대비. command -v로 존재 여부만
+# 먼저 확인하고 하나로 고정한다 — `python3 X || python X`처럼 exit code로 폴백을
+# 판단하면, py_compile이 정상적으로 실패(문법 오류)해도 python으로 또 시도해서 에러가
+# 중복 출력된다.
+if command -v python3 >/dev/null 2>&1; then
+  PYBIN=python3
+elif command -v python >/dev/null 2>&1; then
+  PYBIN=python
+else
+  echo "[harness] python3/python을 찾을 수 없어 아래 문법 검사를 건너뜁니다." >&2
+  PYBIN=""
+fi
+
 is_harness() {
   case "$1" in
     .claude/agents/*|.claude/commands/*|.claude/hooks/*|.claude/settings.json| \
@@ -60,28 +73,30 @@ if [ "$has_harness" -eq 1 ] && [ "$has_project" -eq 1 ]; then
   exit 1
 fi
 
-# .claude/hooks/*.py 파일 문법 검사
-while IFS= read -r f; do
-  [ -z "$f" ] && continue
-  case "$f" in
-    .claude/hooks/*.py)
-      if ! python3 -m py_compile "$f"; then
-        echo "[harness] .claude/hooks 파일 문법 검사 실패: $f" >&2
+if [ -n "$PYBIN" ]; then
+  # .claude/hooks/*.py 파일 문법 검사
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    case "$f" in
+      .claude/hooks/*.py)
+        if ! "$PYBIN" -m py_compile "$f"; then
+          echo "[harness] .claude/hooks 파일 문법 검사 실패: $f" >&2
+          exit 1
+        fi
+        ;;
+    esac
+  done <<< "$STAGED"
+
+  # .claude/settings.json 유효성 검사
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    if [ "$f" = ".claude/settings.json" ]; then
+      if ! "$PYBIN" -c "import json,sys; json.load(open(sys.argv[1]))" "$f"; then
+        echo "[harness] .claude/settings.json JSON 유효성 검사 실패" >&2
         exit 1
       fi
-      ;;
-  esac
-done <<< "$STAGED"
-
-# .claude/settings.json 유효성 검사
-while IFS= read -r f; do
-  [ -z "$f" ] && continue
-  if [ "$f" = ".claude/settings.json" ]; then
-    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f"; then
-      echo "[harness] .claude/settings.json JSON 유효성 검사 실패" >&2
-      exit 1
     fi
-  fi
-done <<< "$STAGED"
+  done <<< "$STAGED"
+fi
 
 exit 0

@@ -44,3 +44,11 @@ runs/.current          # 지금 활성 run 폴더 이름 (한 줄). update_board
 
 이 폴더는 그대로 사람이 보는 진행 상황 대시보드 역할도 한다 — 버전 관리에 포함해 감사 기록으로
 남기는 것을 권장한다.
+
+## 오래된 run 정리
+
+완료된(`summary.md`가 전부 `done`인) run이 쌓여서 `runs/` 아래가 지저분해지면, 전용 커맨드나
+자동 정리 도구 없이 사람이 직접 `runs/archive/`로 옮긴다 (예: `mkdir -p runs/archive && mv
+runs/<완료된-run> runs/archive/`). `summary.md`는 감사 기록으로서 그대로 두고, 필요하면
+`agents/` 아래 상세 보고만 지워서 용량을 줄인다. 전용 정리 커맨드는 이 수동 작업이 실제로
+반복되어 고통스러워질 때 검토한다 (`.claude/decisions/0012` 참고).

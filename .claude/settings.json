@@ -4,14 +4,14 @@
       {
         "matcher": "Agent",
         "hooks": [
-          { "type": "command", "command": "python3 .claude/hooks/description_gate.py" }
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/description_gate.py" }
         ]
       },
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "python3 .claude/hooks/branch_guard.py" },
-          { "type": "command", "command": "python3 .claude/hooks/approval_gate.py" }
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/branch_guard.py" },
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/approval_gate.py" }
         ]
       }
     ],
@@ -19,7 +19,7 @@
       {
         "matcher": "Write|Edit",
         "hooks": [
-          { "type": "command", "command": "python3 .claude/hooks/post_write_check.py" }
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/post_write_check.py" }
         ]
       }
     ],
@@ -27,7 +27,7 @@
       {
         "matcher": "code-generator|impact-analyzer|verifier",
         "hooks": [
-          { "type": "command", "command": "python3 .claude/hooks/update_board.py" }
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/update_board.py" }
         ]
       }
     ]
