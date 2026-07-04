@@ -1,10 +1,10 @@
 # runs/
 
-오케스트레이터-서브에이전트 통신 게시판. `/extend`와 `/create`가 작업마다 폴더를 만든다.
+오케스트레이터-서브에이전트 통신 게시판. `/extend`·`/create`·`/maintain`이 작업마다 폴더를 만든다.
 
 ## `<run>` 표기 규칙 (중요)
 
-이 문서와 `create.md`·`extend.md`·`.claude/agents/*.md`에 나오는 `<run>`은 어떤 고정된 이름이
+이 문서와 `create.md`·`extend.md`·`maintain.md`·`.claude/agents/*.md`에 나오는 `<run>`은 어떤 고정된 이름이
 아니라 **1단계에서 실제로 만들어진 run 폴더의 정확한 이름**을 가리키는 자리표시자다. 예:
 `20260703-161822_add-payment-retry_a1b2`.
 
@@ -21,7 +21,7 @@
 
 ```
 runs/<YYYYMMDD-HHMMSS>_<슬러그>_<짧은해시>/
-  MODE                # "extend" | "create" — approval_gate.py가 승인 게이트 적용 여부를 판단
+  MODE                # "extend" | "create" | "maintain" — approval_gate.py가 승인 게이트 적용 여부를 판단
   PROPOSAL.md          # /create 전용 — 아키텍처 제안서 (승인 게이트 대상)
   APPROVED             # /create 전용 — 사람이 직접 만들어야 하는 승인 마커.
                         # 하네스 툴(Write/Edit)로는 절대 못 만든다 (approval_gate.py가 항상 차단)
@@ -39,8 +39,8 @@ runs/.current          # 지금 활성 run 폴더 이름 (한 줄). update_board
 게이트가 풀리지 않는다.
 
 **`task_id`는 한 run 안에서 유일해야 한다.** 보고 파일명이 `<서브에이전트명>_<task_id>.md`라서,
-같은 `task_id`를 두 번 쓰면 먼저 쓴 보고가 덮어써져서 사라진다. `create.md`·`extend.md`가 예시로
-`t1`을 보여주는데, 위임할 때마다 `t1`, `t2`, `t3`...처럼 새 값으로 올려가야 한다.
+같은 `task_id`를 두 번 쓰면 먼저 쓴 보고가 덮어써져서 사라진다. `create.md`·`extend.md`·`maintain.md`가
+예시로 `t1`을 보여주는데, 위임할 때마다 `t1`, `t2`, `t3`...처럼 새 값으로 올려가야 한다.
 
 이 폴더는 그대로 사람이 보는 진행 상황 대시보드 역할도 한다 — 버전 관리에 포함해 감사 기록으로
 남기는 것을 권장한다.

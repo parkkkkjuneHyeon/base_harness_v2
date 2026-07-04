@@ -96,6 +96,8 @@ runs/.current        # 지금 활성 run 폴더 이름
 됩니다.
 
 - `project.maturity` — `new`/`legacy`. 하네스는 이 값을 런타임에 추측하지 않습니다.
+- `project.source_root` — 제품 코드가 사는 곳 (기본 `src`). 오케스트레이터(`/extend`·`/create`)가
+  새 파일 배치·컨벤션 스캔·영향범위 검색 범위를 정할 때 기준으로 삼습니다.
 - `commands.test`/`commands.lint` — `post_write_check.py`가 그대로 실행합니다. 비워두면 해당
   게이트는 조용히 건너뜁니다.
 - `branches.protected` — `branch_guard.py`가 참조. 브랜치를 자동으로 만들지는 않습니다.
