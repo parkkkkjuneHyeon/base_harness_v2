@@ -8,6 +8,11 @@ argument-hint: (선택) 다시 채울 항목 이름
 
 ## 절차
 
+0. 지금 git 브랜치를 확인합니다. `.claude/project.yaml`이 있으면 그 안의 `branches.protected`를,
+   없으면(첫 실행이라 아직 매니페스트가 없는 경우) 기본값 `main`, `master`, `develop`을 기준으로
+   삼습니다. 지금 브랜치가 여기 포함되면, 이 뒤 단계에서 하는 모든 저장(`project.yaml`,
+   `CLAUDE.md`, `models.*` 오버라이드 시 `.claude/agents/*.md`)이 `branch_guard.py` 훅에
+   막히므로, 시도하기 전에 사람에게 기능 전용 브랜치를 만들고 전환해달라고 요청하고 멈춥니다.
 1. `.claude/project.yaml`이 이미 있으면 읽고, 무엇이 비어 있는지 확인합니다.
 2. 저장소를 가볍게 스캔합니다 — 언어/프레임워크(스택), 기존 테스트 명령(package.json / Makefile /
    pyproject.toml / pytest.ini 등에서 추정), 이미 브랜치 보호 규칙이 있는지.

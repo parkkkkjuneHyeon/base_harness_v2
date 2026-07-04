@@ -8,14 +8,18 @@ project:
   name: ""
   maturity: ""          # new | legacy — /init이 사람에게 반드시 확인 (추측 금지)
   stack: []              # 예: ["python", "fastapi"]
+  source_root: "src"     # 실제 제품 코드가 사는 곳. 오케스트레이터(/extend)가 새 파일 배치·
+                          # 영향범위 검색 범위를 정할 때 이 값을 기준으로 삼는다.
+                          # code-generator/impact-analyzer 서브에이전트에는 이 값을 넣지 않는다 —
+                          # 경로 결정은 오케스트레이터 한 곳의 책임으로 둔다.
 
 commands:
-  test: "conda run -n book-graph-rag pytest -q"        # 전용 conda 환경에서 실행 (ambient/base 오염 방지)
-  lint: "conda run -n book-graph-rag ruff check ."       # 위와 동일 환경
+  test: ""                 # 예: "conda run -n <프로젝트-환경> pytest -q" — /init이 채웁니다
+  lint: ""                 # 예: "conda run -n <프로젝트-환경> ruff check ."
   build: ""                # 선택
 
 branches:
-  protected: ["master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
+  protected: ["main", "master", "develop"]   # branch_guard.py가 참조. 브랜치 자동 생성은 하지 않음.
 
 models:
   # 서브에이전트 모델 배정 오버라이드. 비워두면 .claude/agents/*.md의 기본값을 그대로 씁니다.

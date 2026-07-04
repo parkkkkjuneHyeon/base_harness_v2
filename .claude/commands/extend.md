@@ -12,7 +12,7 @@ argument-hint: <추가할 기능 설명>
 실제 이름으로 치환해서 넘깁니다 — 확실하지 않으면 `runs/.current`를 다시 읽습니다.
 
 **서브에이전트 호출 규칙**: 아래에서 `code-generator`/`impact-analyzer`를 Agent 도구로 부를
-때마다, `description`을 항상 `"[<task_id>] <짧은 설명>"` 형식으로 씁니다 (예: `"[t2] neo4j_uri
+때마다, `description`을 항상 `"[<task_id>] <짧은 설명>"` 형식으로 씁니다 (예: `"[t2] parse_config
 잔여 참조 검색"`). `update_board.py` 훅이 이 접두사로 보고 누락을 자동 감지합니다 — 5절 참고.
 
 작업 대상: $ARGUMENTS
@@ -21,6 +21,10 @@ argument-hint: <추가할 기능 설명>
 
 - `.claude/project.yaml`이 없거나 `project.maturity`가 비어 있으면 먼저 `/init`을 실행하라고
   안내하고 멈춥니다.
+- `project.source_root`(기본값 `src`) 아래를 Glob으로 확인합니다. 폴더가 없거나 `README.md`
+  정도만 있고 실제 코드가 사실상 없으면, 이 프로젝트는 아직 생성 단계입니다. `/extend`는 기존
+  코드에 기능을 붙이는 모드라 비교할 기존 코드가 없으면 제대로 동작하지 않습니다 — 대신
+  `/create`를 쓰라고 안내하고 멈춥니다.
 - 지금 git 브랜치가 `.claude/project.yaml`의 `branches.protected`에 있으면, 사람에게 기능 전용
   브랜치를 만들고 전환해달라고 요청하고 멈춥니다. (`branch_guard.py` 훅이 실제 쓰기 시점에도 한
   번 더 막습니다.)
@@ -48,16 +52,21 @@ echo "RUN_ID=$RUN_ID"
 ## 2. 컨벤션·통합 지점 파악
 
 - `CLAUDE.md`와 `.claude/project.yaml`의 `conventions.notes`를 읽습니다.
-- 비슷한 기존 기능 1~2개를 직접 읽어 네이밍·폴더 구조·에러 처리·테스트 스타일 패턴을 파악합니다.
+- `project.source_root`(기본값 `src`)를 확인합니다 — 실제 제품 코드는 이 폴더 아래에만 있고,
+  `.claude/`, `runs/`는 하네스 자체이므로 컨벤션 파악·통합 지점 탐색 대상에서 제외합니다.
+- `source_root` 아래에서 비슷한 기존 기능 1~2개를 직접 읽어 네이밍·폴더 구조·에러 처리·테스트
+  스타일 패턴을 파악합니다.
 - 이 기능이 기존 코드의 어디에 연결되는지(통합 지점)를 정합니다.
 
 ## 3. 영향범위 분석 (추가·변경·삭제 대상이 있을 때)
 
 바꾸거나 지우려는 심볼이 있으면, 코드를 쓰기 전에 `impact-analyzer`에게 위임합니다:
 
-- `task_id`를 하나 정합니다 (예: `t1`).
-- Task 프롬프트에 검색 대상 심볼과, 정확한 보고 경로(`runs/<run>/agents/impact-analyzer_t1.md`)를
-  명시합니다.
+- `task_id`를 하나 정합니다 — **이번 run 안에서 아직 안 쓴 새 값으로** (`t1`, `t2`, `t3`... 순서로
+  늘려갑니다). 같은 값을 재사용하면 보고 파일명(`<서브에이전트명>_<task_id>.md`)이 겹쳐서 이전
+  보고를 덮어쓰고, board에서 그 기록이 조용히 사라집니다.
+- Task 프롬프트에 검색 대상 심볼과, 검색 범위(`project.source_root` 아래), 정확한 보고 경로
+  (`runs/<run>/agents/impact-analyzer_<task_id>.md`)를 명시합니다.
 - 결과 보고서를 읽고, 참조가 남아있는데 삭제하려는 경우라면 **삭제를 취소하거나 deprecation
   경고를 먼저 붙이는 쪽으로 스펙을 조정**합니다.
 - 코드베이스 검색만으로는 부족합니다 — 삭제 대상이 실제 운영에서 쓰이고 있는지는 하네스가 볼 수

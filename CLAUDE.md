@@ -31,6 +31,12 @@
 | `impact-analyzer` | haiku | 심볼 참조·의존성 전수 검색 (판단 없이 목록만) |
 | `verifier` | sonnet | 훅으로 판정 불가능한, 해석이 필요한 검증만 |
 
+## 폴더 구조
+
+저장소 루트(`.claude/`, `CLAUDE.md`, `runs/`)는 하네스 자체(정책·설정·게시판)이고, 실제 제품
+코드는 `.claude/project.yaml`의 `project.source_root`(기본값 `src`) 아래에 둡니다. 자세한 이유는
+`.claude/decisions/0002-source-root.md` 참고.
+
 ## 컨벤션
 
 (프로젝트별 컨벤션은 `.claude/project.yaml`의 `conventions.notes`에 기록하고, `/init`이 여기 요약을
