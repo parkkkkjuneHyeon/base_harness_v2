@@ -2,6 +2,12 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": "Agent",
+        "hooks": [
+          { "type": "command", "command": "python3 .claude/hooks/description_gate.py" }
+        ]
+      },
+      {
         "matcher": "Write|Edit",
         "hooks": [
           { "type": "command", "command": "python3 .claude/hooks/branch_guard.py" },

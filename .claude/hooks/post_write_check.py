@@ -15,7 +15,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _manifest import load_manifest  # noqa: E402
+from _manifest import load_manifest, ManifestUnavailable  # noqa: E402
 
 SKIP_PREFIXES = ("runs/", ".claude/", "CLAUDE.md")
 
@@ -60,10 +60,14 @@ def main() -> None:
     if should_skip(path, cwd):
         sys.exit(0)
 
-    manifest = load_manifest(cwd)
+    try:
+        manifest = load_manifest(cwd)
+    except ManifestUnavailable as e:
+        print(f"[harness] {e}", file=sys.stderr)
+        sys.exit(2)
     commands = manifest.get("commands") if isinstance(manifest, dict) else {}
     commands = commands or {}
-    test_cmd = commands.get("test")
+    test_cmd = commands.get("test_fast") or commands.get("test")
     lint_cmd = commands.get("lint")
 
     if not test_cmd and not lint_cmd:

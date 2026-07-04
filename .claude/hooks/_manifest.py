@@ -9,6 +9,12 @@ import os
 import sys
 
 
+class ManifestUnavailable(Exception):
+    """PyYAML이 없어서 매니페스트를 못 읽을 때만 발생 — project.yaml이 아예 없는
+    정상 상태와 구분하기 위함."""
+    pass
+
+
 def load_manifest(project_root: str) -> dict:
     path = os.path.join(project_root, ".claude", "project.yaml")
     if not os.path.exists(path):
@@ -19,10 +25,12 @@ def load_manifest(project_root: str) -> dict:
     except ImportError:
         print(
             "[harness] .claude/project.yaml을 읽으려면 PyYAML이 필요합니다: "
-            "pip install pyyaml (이번 훅 검사는 건너뜁니다)",
+            "pip install pyyaml",
             file=sys.stderr,
         )
-        return {}
+        raise ManifestUnavailable(
+            "PyYAML이 설치되지 않았습니다. pip install pyyaml을 실행하세요."
+        )
 
     with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)

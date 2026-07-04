@@ -8,11 +8,19 @@ argument-hint: (선택) 다시 채울 항목 이름
 
 ## 절차
 
-0. 지금 git 브랜치를 확인합니다. `.claude/project.yaml`이 있으면 그 안의 `branches.protected`를,
-   없으면(첫 실행이라 아직 매니페스트가 없는 경우) 기본값 `main`, `master`, `develop`을 기준으로
-   삼습니다. 지금 브랜치가 여기 포함되면, 이 뒤 단계에서 하는 모든 저장(`project.yaml`,
-   `CLAUDE.md`, `models.*` 오버라이드 시 `.claude/agents/*.md`)이 `branch_guard.py` 훅에
-   막히므로, 시도하기 전에 사람에게 기능 전용 브랜치를 만들고 전환해달라고 요청하고 멈춥니다.
+0. 지금 git 브랜치와 hooksPath 설정을 확인합니다.
+   - **브랜치 확인**: `.claude/project.yaml`이 있으면 그 안의 `branches.protected`를,
+     없으면(첫 실행이라 아직 매니페스트가 없는 경우) 기본값 `main`, `master`, `develop`을 기준으로
+     삼습니다. 지금 브랜치가 여기 포함되면, 이 뒤 단계에서 하는 모든 저장(`project.yaml`,
+     `CLAUDE.md`, `models.*` 오버라이드 시 `.claude/agents/*.md`)이 `branch_guard.py` 훅에
+     막히므로, 시도하기 전에 사람에게 기능 전용 브랜치를 만들고 전환해달라고 요청하고 멈춥니다.
+   - **hooksPath 확인**: `git config --get core.hooksPath`를 실행합니다. 결과가 `.githooks`가 아니면
+     다음 명령을 실행하라고 안내합니다:
+     ```
+     git config core.hooksPath .githooks
+     ```
+     설정하지 않으면 `.githooks/pre-commit` 훅(커밋 분리)이 작동하지 않아, 하네스와 프로젝트 파일이
+     섞인 커밋이 그대로 통과합니다. 안내 후 계속 진행합니다 (차단하지 않음).
 1. `.claude/project.yaml`이 이미 있으면 읽고, 무엇이 비어 있는지 확인합니다.
 2. 저장소를 가볍게 스캔합니다 — 언어/프레임워크(스택), 기존 테스트 명령(package.json / Makefile /
    pyproject.toml / pytest.ini 등에서 추정), 이미 브랜치 보호 규칙이 있는지.

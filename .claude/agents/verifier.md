@@ -19,7 +19,7 @@ tools: Read, Grep, Glob, Bash, Write
 
 ## 보고 파일
 
-`runs/<run>/agents/verifier_<task_id>.md` 에 아래 형식으로 작성 후 종료합니다.
+`runs/<run>/agents/verifier_<task_id>.md` 에 아래 형식으로 작성 후 종료합니다. **task_id는 오케스트레이터가 지정한 값을 그대로 쓴다 — 더 적절해 보이는 이름이 있어도 바꾸지 않는다. 보고 파일 경로의 `<task_id>` 부분도 마찬가지다.**
 
 ```
 task_id:       <오케스트레이터가 준 ID>

@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from _manifest import load_manifest  # noqa: E402
+from _manifest import load_manifest, ManifestUnavailable  # noqa: E402
 
 
 def current_branch(cwd: str):
@@ -43,7 +43,10 @@ def main() -> None:
     if branch is None:
         sys.exit(0)
 
-    manifest = load_manifest(cwd)
+    try:
+        manifest = load_manifest(cwd)
+    except ManifestUnavailable:
+        manifest = {}
     branches_cfg = manifest.get("branches") if isinstance(manifest, dict) else None
     protected = (
         branches_cfg.get("protected")

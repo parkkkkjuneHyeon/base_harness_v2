@@ -60,4 +60,28 @@ if [ "$has_harness" -eq 1 ] && [ "$has_project" -eq 1 ]; then
   exit 1
 fi
 
+# .claude/hooks/*.py 파일 문법 검사
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  case "$f" in
+    .claude/hooks/*.py)
+      if ! python3 -m py_compile "$f"; then
+        echo "[harness] .claude/hooks 파일 문법 검사 실패: $f" >&2
+        exit 1
+      fi
+      ;;
+  esac
+done <<< "$STAGED"
+
+# .claude/settings.json 유효성 검사
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  if [ "$f" = ".claude/settings.json" ]; then
+    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$f"; then
+      echo "[harness] .claude/settings.json JSON 유효성 검사 실패" >&2
+      exit 1
+    fi
+  fi
+done <<< "$STAGED"
+
 exit 0
