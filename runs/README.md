@@ -29,7 +29,7 @@ runs/<YYYYMMDD-HHMMSS>_<슬러그>_<짧은해시>/
   agents/
     <서브에이전트명>_<task_id>.md   # 상세 보고. 디버깅·감사용, 평소엔 안 읽음.
 
-runs/.current          # 지금 활성 run 폴더 이름 (한 줄). update_board.py / approval_gate.py가 참조.
+runs/.current          # 머신 로컬 상태, .gitignore 포함. update_board.py / approval_gate.py 참조.
 ```
 
 `summary.md`는 `.claude/hooks/update_board.py`가 서브에이전트가 끝날 때마다 자동으로 다시
@@ -37,6 +37,8 @@ runs/.current          # 지금 활성 run 폴더 이름 (한 줄). update_board
 `.claude/agents/*.md` 참고). `APPROVED`는 사람이 자기 터미널/에디터로 직접 만든다 — 프로젝트
 루트에서 `touch "runs/$(cat runs/.current)/APPROVED"` — 대화창에서 "승인했다"고 말하는 것만으로는
 게이트가 풀리지 않는다.
+
+`runs/.current`는 머신 로컬 세션 상태라 커밋하지 않는다(.gitignore에 포함) — 이미 추적 중인 브랜치에서는 `git rm --cached runs/.current`로 추적을 해제한다.
 
 **`task_id`는 한 run 안에서 유일해야 한다.** 보고 파일명이 `<서브에이전트명>_<task_id>.md`라서,
 같은 `task_id`를 두 번 쓰면 먼저 쓴 보고가 덮어써져서 사라진다. `create.md`·`extend.md`·`maintain.md`가

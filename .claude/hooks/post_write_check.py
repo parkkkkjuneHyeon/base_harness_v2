@@ -6,8 +6,10 @@
 verifier 서브에이전트(모델)의 몫이다. 여기서는 기계적으로 예/아니오로
 판정 가능한 것만 다룬다 (decisions/0001 — Verifier 경계선 참고).
 
-runs/ 와 .claude/ 밑, CLAUDE.md 변경은 건드리지 않는다 — 보고서/설정
-파일까지 매번 테스트를 돌리면 낭비다.
+제외 목록(runs/, .claude/, CLAUDE.md) 방식에서 허용 목록(project.source_root + tests/)
+방식으로 전환. decisions/0002에서 "제외 목록보다 허용 목록(source_root)이 안전하다"고
+결정했으므로, 이 훅도 그에 맞춘다. 소스 밖 문서/설정 파일(README.md, IMPROVEMENTS.md
+등)에 매번 전체 테스트를 돌리는 낭비를 제거.
 """
 import json
 import os
@@ -17,19 +19,15 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from _manifest import load_manifest, ManifestUnavailable  # noqa: E402
 
-SKIP_PREFIXES = ("runs/", ".claude/", "CLAUDE.md")
-
 
 def touched_path(tool_input: dict) -> str:
     return tool_input.get("file_path") or tool_input.get("path") or ""
 
 
-def should_skip(path: str, cwd: str) -> bool:
-    if not path:
-        return True
+def to_relpath(path: str, cwd: str) -> str:
+    """절대/상대 경로를 정규화된 상대 경로로 변환 (forward slash 기준)."""
     rel = os.path.relpath(path, cwd) if os.path.isabs(path) else path
-    rel = rel.replace(os.sep, "/")
-    return rel.startswith(SKIP_PREFIXES)
+    return rel.replace(os.sep, "/")
 
 
 def run_cmd(cmd: str, cwd: str, label: str):
@@ -48,6 +46,7 @@ def run_cmd(cmd: str, cwd: str, label: str):
 
 
 def main() -> None:
+    # 1. 페이로드 파싱, path 추출
     try:
         payload = json.load(sys.stdin)
     except Exception:
@@ -57,14 +56,31 @@ def main() -> None:
     tool_input = payload.get("tool_input") or {}
     path = touched_path(tool_input)
 
-    if should_skip(path, cwd):
+    if not path:
         sys.exit(0)
 
+    # 2. 매니페스트 로드 (fail-closed)
     try:
         manifest = load_manifest(cwd)
     except ManifestUnavailable as e:
         print(f"[harness] {e}", file=sys.stderr)
         sys.exit(2)
+
+    # 3. source_root 계산 (기본값 "src", 끝의 / 제거)
+    project_cfg = manifest.get("project") if isinstance(manifest, dict) else {}
+    source_root = ((project_cfg or {}).get("source_root") or "src").rstrip("/")
+
+    # 4. 상대경로 계산
+    rel = to_relpath(path, cwd)
+
+    # 5. 허용 목록 판정: source_root 또는 tests/ 안인가?
+    is_source = rel == source_root or rel.startswith(source_root + "/")
+    is_tests = rel == "tests" or rel.startswith("tests/")
+
+    if not (is_source or is_tests):
+        sys.exit(0)  # 허용 목록 밖 → 테스트 불필요
+
+    # 6. 테스트·린트 실행
     commands = manifest.get("commands") if isinstance(manifest, dict) else {}
     commands = commands or {}
     test_cmd = commands.get("test_fast") or commands.get("test")

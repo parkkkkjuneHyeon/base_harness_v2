@@ -28,7 +28,10 @@ argument-hint: (선택) 다시 채울 항목 이름
    - `project.maturity` — 신규(new)인지 레거시(legacy)인지. **추측하지 말고 반드시 사람에게
      확인**합니다. 이후 모든 모드가 이 값을 그대로 참조합니다.
    - `commands.test`, `commands.lint` — 훅(`post_write_check.py`)이 그대로 실행할 명령이므로
-     정확해야 합니다. 비워두면 해당 게이트는 조용히 건너뜁니다.
+     정확해야 합니다. 비워두면 해당 게이트는 조용히 건너뜁니다. 특히 레거시 프로젝트에서 테스트가
+     실제로 하나도 없으면 `commands.test`를 채우지 말고 비워두세요 — pytest는 수집된 테스트가
+     0개이면 exit 5를 반환해서, 채우는 순간 모든 소스 파일 Write가 게이트 실패합니다. 첫 테스트
+     파일이 생긴 뒤에 채웁니다.
    - `models.*` — 서브에이전트 모델을 기본값과 다르게 쓰고 싶은지 묻습니다 (팀마다 비용 민감도가
      다를 수 있습니다). 비워두면 각 서브에이전트 파일의 기본값을 그대로 씁니다.
 4. `.claude/project.yaml`을 채워서 저장합니다.
@@ -36,6 +39,11 @@ argument-hint: (선택) 다시 채울 항목 이름
    프론트매터의 `model:` 값을 매니페스트 값으로 덮어씁니다.
    (예: `models.code-generator: sonnet` → `.claude/agents/code-generator.md`의 `model: haiku`를
    `model: sonnet`으로 수정)
+
+   **주의 — 커밋 분리**: `.claude/agents/*.md`는 `.githooks/pre-commit`의 커밋 분리 규칙에서
+   "하네스 인프라" 버킷이고 `project.yaml`·`CLAUDE.md`는 그 외 버킷입니다. 이 단계의 agents 파일
+   변경과 4단계의 `project.yaml` 저장을 한 커밋에 넣으면 pre-commit이 차단합니다. `/init` 결과를
+   커밋할 때는 agents 파일 변경과 나머지(project.yaml, CLAUDE.md)를 두 커밋으로 나눠서 진행하세요.
 6. `CLAUDE.md`의 컨벤션 섹션에 이번에 파악한 컨벤션을 요약해 추가합니다.
 7. 무엇을 채웠는지, 무엇을 사람 확인으로 남겼는지 요약해서 보고합니다.
 

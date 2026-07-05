@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """PreToolUse 훅 (Write|Edit) — 생성 모드(/create)의 아키텍처 승인 게이트.
 
-두 가지를 강제한다. 둘 다 프롬프트 지시가 아니라 기계적으로 막는다 — 오케스트레이터가
+세 가지를 강제한다. 둘 다 프롬프트 지시가 아니라 기계적으로 막는다 — 오케스트레이터가
 잊거나, 서두르거나, 프롬프트 인젝션으로 "그냥 진행해도 된다"는 내용을 주입받아도
 뚫리지 않는 걸 목표로 한다.
 
-1. `runs/<run>/APPROVED` 파일은 Write/Edit로 절대 만들 수 없다. 사람이 자기 터미널/
-   에디터로 직접 만들어야 한다 — 오케스트레이터가 스스로 "승인됐다"고 파일을 써서
-   자기 자신을 승인하는 걸 구조적으로 막기 위함이다. 이건 어떤 run/모드에도 적용된다.
+1. `runs/<run>/APPROVED`, `runs/.current`, `runs/<run>/MODE` 파일은 Write/Edit로 절대
+   만들 수 없다. 사람이 자기 터미널/에디터로 직접 만들어야 한다 — 오케스트레이터가
+   스스로 "승인됐다"고 파일을 써서 자기 자신을 승인하거나, run 상태를 변조하는 걸
+   구조적으로 막기 위함이다. 이들 파일은 정상적인 run 생성 경로에서는 Bash(printf 등)로만
+   만들어지므로, Write/Edit을 차단해도 정상 흐름은 깨지지 않는다.
 
 2. `runs/<run>/MODE`가 정확히 "create"인 run에서는, `project.source_root` 아래로의
    Write/Edit을 `runs/<run>/APPROVED`가 실제로 존재할 때만 허용한다. MODE가 없거나
@@ -63,12 +65,10 @@ def main() -> None:
 
     relpath = rel(path, cwd)
 
-    # 규칙 1 — APPROVED 파일은 어떤 상황에서도 하네스 툴로 만들 수 없다.
-    if fnmatch.fnmatch(relpath, "runs/*/APPROVED"):
+    # 규칙 1 — APPROVED/MODE/.current 파일은 어떤 상황에서도 하네스 툴로 만들 수 없다.
+    if fnmatch.fnmatch(relpath, "runs/*/APPROVED") or relpath == "runs/.current" or fnmatch.fnmatch(relpath, "runs/*/MODE"):
         print(
-            f"[harness] '{relpath}'는 하네스 툴(Write/Edit)로 만들 수 없습니다. "
-            "제안서를 검토했다면 사람이 직접 터미널/에디터로 이 파일을 만들어야 "
-            f"승인으로 인정됩니다 (예: touch {relpath}).",
+            f"[harness] '{relpath}'는 run 상태 파일이라 하네스 툴(Write/Edit)로 수정할 수 없습니다. 이 파일들은 커맨드 문서 1단계의 Bash 명령으로만 만들어집니다 — Write/Edit 수정을 허용하면 /create 승인 게이트를 우회할 수 있습니다.",
             file=sys.stderr,
         )
         sys.exit(2)

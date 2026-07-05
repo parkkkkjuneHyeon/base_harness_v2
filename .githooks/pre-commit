@@ -97,6 +97,23 @@ if [ -n "$PYBIN" ]; then
       fi
     fi
   done <<< "$STAGED"
+
+  # .claude/project.yaml YAML 문법 검사
+  # PyYAML이 없을 때 경고만 하는 이유: pre-commit은 보조 검사(fail-open)이고,
+  # 실제 게이트인 post_write_check.py는 fail-closed로 이미 막는다.
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    if [ "$f" = ".claude/project.yaml" ]; then
+      if "$PYBIN" -c "import yaml" 2>/dev/null; then
+        if ! "$PYBIN" -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" "$f"; then
+          echo "[harness] .claude/project.yaml YAML 문법 검사 실패" >&2
+          exit 1
+        fi
+      else
+        echo "[harness] PyYAML이 없어 project.yaml 문법 검사를 건너뜁니다." >&2
+      fi
+    fi
+  done <<< "$STAGED"
 fi
 
 exit 0

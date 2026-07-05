@@ -21,7 +21,8 @@ import re
 import sys
 
 FIELD_RE = re.compile(r"^([a-z_]+):\s*(.*)$")
-TASK_ID_RE = re.compile(r"^\[([A-Za-z0-9_]+)\]")
+# 이 정규식은 description_gate.py에도 정의되어 있다 — 바꿀 때 반드시 같이 바꿀 것.
+TASK_ID_RE = re.compile(r"^\[([A-Za-z0-9_-]+)\]")
 
 
 def find_current_run(cwd: str):
@@ -96,7 +97,14 @@ def load_missing(run_dir: str) -> dict:
 
 
 def save_missing(run_dir: str, missing: dict) -> None:
+    """누락이 전부 해소되면 빈 {} 파일을 남기지 않고 지운다 — run 폴더를 감사 기록으로 커밋할 때 잔재가 따라가지 않게."""
     path = os.path.join(run_dir, "agents", ".missing.json")
+    if not missing:
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+        return
     with open(path, "w", encoding="utf-8") as f:
         json.dump(missing, f, ensure_ascii=False, indent=2)
 

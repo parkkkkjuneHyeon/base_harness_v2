@@ -17,7 +17,8 @@ import re
 import sys
 
 GATED_TYPES = {"code-generator", "impact-analyzer", "verifier"}
-TASK_ID_RE = re.compile(r"^\[[A-Za-z0-9_]+\]")
+# 이 정규식은 update_board.py에도 정의되어 있다 — 바꿀 때 반드시 같이 바꿀 것.
+TASK_ID_RE = re.compile(r"^\[[A-Za-z0-9_-]+\]")
 
 
 def main() -> None:

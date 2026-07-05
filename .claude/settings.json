@@ -13,6 +13,12 @@
           { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/branch_guard.py" },
           { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/approval_gate.py" }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/_pyrun.sh .claude/hooks/bash_approved_gate.py" }
+        ]
       }
     ],
     "PostToolUse": [

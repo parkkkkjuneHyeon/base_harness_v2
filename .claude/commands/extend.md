@@ -13,7 +13,7 @@ argument-hint: <추가할 기능 설명>
 
 **서브에이전트 호출 규칙**: 아래에서 `code-generator`/`impact-analyzer`를 Agent 도구로 부를
 때마다, `description`을 항상 `"[<task_id>] <짧은 설명>"` 형식으로 씁니다 (예: `"[t2] parse_config
-잔여 참조 검색"`). `update_board.py` 훅이 이 접두사로 보고 누락을 자동 감지합니다 — 5절 참고.
+잔여 참조 검색"` — task_id는 영숫자·밑줄·하이픈만 허용하며, `[t-hotfix]` 같은 형태도 가능합니다). `update_board.py` 훅이 이 접두사로 보고 누락을 자동 감지합니다 — 5절 참고.
 
 작업 대상: $ARGUMENTS
 
